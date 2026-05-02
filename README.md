@@ -95,8 +95,10 @@ api:
 ```
 
 3. Change `8080` if needed (for example `8090`).
-4. Save the file.
-5. Start or restart your server.
+5. Save the file.
+6. Start or restart your server.
+
+(You may need to expose the port via your server host(if not local) for this to work.
 
 ---
 

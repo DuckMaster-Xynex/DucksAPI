@@ -1,0 +1,6 @@
+name: DucksAPI
+version: '1.0.0'
+main: uk.xynex.ducksapi.DucksApiPlugin
+api-version: '1.21'
+author: xynex
+description: Exposes HTTP telemetry endpoint for Paper servers.

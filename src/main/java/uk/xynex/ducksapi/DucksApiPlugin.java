@@ -3,7 +3,10 @@ package uk.xynex.ducksapi;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
@@ -15,6 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public final class DucksApiPlugin extends JavaPlugin {
     private static final String CONFIG_API_PORT_PATH = "api.port";
+    private static final String STAFF_PERMISSION = "ducksapi.staff";
 
     private HttpServer httpServer;
     private final AtomicReference<String> serverStatus = new AtomicReference<>("offline");
@@ -64,11 +68,22 @@ public final class DucksApiPlugin extends JavaPlugin {
 
             final int onlinePlayers = Bukkit.getOnlinePlayers().size();
             final int maxPlayers = Bukkit.getMaxPlayers();
+            final Permission permissionService = getPermissionService();
+            final String permissionPlugin = permissionService == null
+                    ? "none"
+                    : permissionService.getName();
+            final int staffOnline = countStaffOnline(permissionService);
+
             final String json = "{" +
                     "\"status\":\"" + serverStatus.get() + "\"," +
                     "\"players\":{" +
                     "\"online\":" + onlinePlayers + "," +
                     "\"max\":" + maxPlayers +
+                    "}," +
+                    "\"staff\":{" +
+                    "\"online\":" + staffOnline + "," +
+                    "\"permission\":\"" + STAFF_PERMISSION + "\"," +
+                    "\"provider\":\"" + permissionPlugin + "\"" +
                     "}" +
                     "}";
 
@@ -78,6 +93,25 @@ public final class DucksApiPlugin extends JavaPlugin {
             try (OutputStream outputStream = exchange.getResponseBody()) {
                 outputStream.write(payload);
             }
+        }
+
+        private Permission getPermissionService() {
+            final RegisteredServiceProvider<Permission> registration =
+                    Bukkit.getServicesManager().getRegistration(Permission.class);
+            return registration == null ? null : registration.getProvider();
+        }
+
+        private int countStaffOnline(Permission permissionService) {
+            int count = 0;
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                final boolean hasPermission = permissionService == null
+                        ? player.hasPermission(STAFF_PERMISSION)
+                        : permissionService.playerHas(player, STAFF_PERMISSION);
+                if (hasPermission) {
+                    count++;
+                }
+            }
+            return count;
         }
     }
 }

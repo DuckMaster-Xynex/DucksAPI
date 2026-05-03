@@ -7,6 +7,7 @@ A beginner-friendly Minecraft **Paper** plugin that opens a tiny HTTP API endpoi
   - server status (`online`, `offline`, `restarting`)
   - online player count
   - max player count
+  - staff count using permsssion
 
 ---
 

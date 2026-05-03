@@ -43,34 +43,7 @@ You need:
 
 ---
 
-## 3) Build the plugin JAR (step-by-step)
-
-If you already have a ready-made jar from a release, skip to section 4.
-
-1. Download or clone this repository to your computer.
-2. Open a terminal in this folder.
-3. Run:
-
-### Linux/macOS
-```bash
-./gradlew build
-```
-
-### Windows
-```bat
-gradlew.bat build
-```
-
-4. Wait for build to finish.
-5. Find the built plugin jar in:
-
-`build/libs/`
-
-Use the **reobf**/final output jar from that folder.
-
----
-
-## 4) Install on your Minecraft Paper server
+## 3) Install on your Minecraft Paper server
 
 1. **Stop** your Minecraft server.
 2. Copy the plugin jar into your server's `plugins/` folder.
@@ -82,7 +55,7 @@ The plugin auto-creates `config.yml` on first run.
 
 ---
 
-## 5) Configure the API port
+## 4) Configure the API port
 
 1. Open this file:
 
@@ -103,7 +76,7 @@ api:
 
 ---
 
-## 6) Test that it works
+## 5) Test that it works
 
 ### From the server machine
 Run:
@@ -125,7 +98,7 @@ If it fails externally, see firewall/port sections below.
 
 ---
 
-## 7) Open firewall/hosting rules (important)
+## 6) Open firewall/hosting rules (important)
 
 You must allow inbound TCP traffic on the API port.
 
@@ -141,7 +114,7 @@ Then reload/check firewall if needed.
 
 ---
 
-## 8) Home hosting: router port forwarding
+## 7) Home hosting: router port forwarding
 
 If your Minecraft server is at home and you want external access:
 
@@ -154,7 +127,7 @@ Without this, outside users cannot reach your API.
 
 ---
 
-## 9) Domain + DNS setup (easy explanation)
+## 8) Domain + DNS setup (easy explanation)
 
 ### Important
 DNS only maps **names to IPs**. DNS does **not** map URL paths like `/api`.
@@ -176,7 +149,7 @@ If you want `https://xynex.uk/api`, configure reverse proxy (Nginx/Caddy) to rou
 
 ---
 
-## 10) Connect a website frontend safely
+## 9) Connect a website frontend safely
 
 ### Safety checklist
 - Prefer HTTPS (via reverse proxy)
@@ -215,7 +188,7 @@ loadServerStatus();
 
 ---
 
-## 11) Release checklist (for publishing later)
+## 10) Release checklist (for publishing later)
 
 If you want to release this plugin publicly:
 
@@ -228,7 +201,7 @@ If you want to release this plugin publicly:
 
 ---
 
-## 12) Troubleshooting
+## 11) Troubleshooting
 
 ### "Address already in use"
 Another app is already using the port.
@@ -243,7 +216,7 @@ Check server console for plugin startup errors and verify plugin loaded.
 
 ---
 
-## 13) Uninstall
+## 12) Uninstall
 
 1. Stop server
 2. Remove plugin jar from `plugins/`

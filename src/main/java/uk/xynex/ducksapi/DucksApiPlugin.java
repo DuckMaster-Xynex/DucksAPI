@@ -5,7 +5,12 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -13,15 +18,21 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
-public final class DucksApiPlugin extends JavaPlugin {
+public final class DucksApiPlugin extends JavaPlugin implements Listener {
     private static final String CONFIG_API_PORT_PATH = "api.port";
     private static final String STAFF_PERMISSION = "ducksapi.staff";
+    private static final int MAX_EVENTS = 10;
 
     private HttpServer httpServer;
     private final AtomicReference<String> serverStatus = new AtomicReference<>("offline");
+    private final Deque<StatusEvent> recentEvents = new ArrayDeque<>();
+    private long startTimeMillis;
 
     @Override
     public void onEnable() {
@@ -29,6 +40,8 @@ public final class DucksApiPlugin extends JavaPlugin {
 
         final int port = getConfig().getInt(CONFIG_API_PORT_PATH, 8080);
         serverStatus.set("online");
+        startTimeMillis = System.currentTimeMillis();
+        getServer().getPluginManager().registerEvents(this, this);
 
         try {
             httpServer = HttpServer.create(new InetSocketAddress(port), 0);
@@ -58,6 +71,25 @@ public final class DucksApiPlugin extends JavaPlugin {
         serverStatus.set("offline");
     }
 
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        addEvent("join", event.getPlayer().getName());
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        addEvent("leave", event.getPlayer().getName());
+    }
+
+    private void addEvent(String type, String player) {
+        synchronized (recentEvents) {
+            recentEvents.addLast(new StatusEvent(type, player, System.currentTimeMillis() / 1000L));
+            while (recentEvents.size() > MAX_EVENTS) {
+                recentEvents.removeFirst();
+            }
+        }
+    }
+
     private final class StatusHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
@@ -66,25 +98,103 @@ public final class DucksApiPlugin extends JavaPlugin {
                 return;
             }
 
-            final int onlinePlayers = Bukkit.getOnlinePlayers().size();
-            final int maxPlayers = Bukkit.getMaxPlayers();
             final Permission permissionService = getPermissionService();
             final String permissionPlugin = permissionService == null
                     ? "none"
                     : permissionService.getName();
-            final int staffOnline = countStaffOnline(permissionService);
+
+            final StringBuilder playersListJson = new StringBuilder();
+            final StringBuilder staffListJson = new StringBuilder();
+            int onlinePlayers = 0;
+            int staffOnline = 0;
+            boolean firstPlayer = true;
+            boolean firstStaff = true;
+
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                onlinePlayers++;
+
+                if (!firstPlayer) {
+                    playersListJson.append(',');
+                }
+                firstPlayer = false;
+                playersListJson
+                        .append("{\"name\":\"").append(jsonEscape(player.getName())).append("\",")
+                        .append("\"uuid\":\"").append(player.getUniqueId()).append("\"}");
+
+                final boolean hasPermission = permissionService == null
+                        ? player.hasPermission(STAFF_PERMISSION)
+                        : permissionService.playerHas(player, STAFF_PERMISSION);
+
+                if (hasPermission) {
+                    staffOnline++;
+                    if (!firstStaff) {
+                        staffListJson.append(',');
+                    }
+                    firstStaff = false;
+                    staffListJson
+                            .append("{\"name\":\"").append(jsonEscape(player.getName())).append("\",")
+                            .append("\"rank\":\"")
+                            .append(jsonEscape(resolveStaffRank(permissionService, player)))
+                            .append("\"}");
+                }
+            }
+
+            final StringBuilder worldsJson = new StringBuilder();
+            boolean firstWorld = true;
+            for (World world : Bukkit.getWorlds()) {
+                if (!firstWorld) {
+                    worldsJson.append(',');
+                }
+                firstWorld = false;
+                worldsJson
+                        .append("{\"name\":\"").append(jsonEscape(world.getName())).append("\",")
+                        .append("\"players\":").append(world.getPlayers().size()).append('}');
+            }
+
+            final StringBuilder eventsJson = new StringBuilder();
+            synchronized (recentEvents) {
+                boolean firstEvent = true;
+                for (StatusEvent statusEvent : recentEvents) {
+                    if (!firstEvent) {
+                        eventsJson.append(',');
+                    }
+                    firstEvent = false;
+                    eventsJson.append("{\"type\":\"").append(statusEvent.type()).append("\",")
+                            .append("\"player\":\"").append(jsonEscape(statusEvent.player())).append("\",")
+                            .append("\"timestamp\":").append(statusEvent.timestamp()).append('}');
+                }
+            }
+
+            final int maxPlayers = Bukkit.getMaxPlayers();
+            final long uptimeSeconds = Math.max(0L, (System.currentTimeMillis() - startTimeMillis) / 1000L);
+            final double tps = roundToTwoDecimals(Bukkit.getServer().getTPS()[0]);
+            final double mspt = roundToTwoDecimals(Bukkit.getServer().getAverageTickTime());
 
             final String json = "{" +
                     "\"status\":\"" + serverStatus.get() + "\"," +
+                    "\"server\":{" +
+                    "\"name\":\"Xynex\"," +
+                    "\"version\":\"" + jsonEscape(Bukkit.getVersion()) + "\"," +
+                    "\"motd\":\"" + jsonEscape(Bukkit.getMotd()) + "\"," +
+                    "\"uptime\":" + uptimeSeconds +
+                    "}," +
                     "\"players\":{" +
                     "\"online\":" + onlinePlayers + "," +
-                    "\"max\":" + maxPlayers +
+                    "\"max\":" + maxPlayers + "," +
+                    "\"list\":[" + playersListJson + "]" +
                     "}," +
                     "\"staff\":{" +
                     "\"online\":" + staffOnline + "," +
                     "\"permission\":\"" + STAFF_PERMISSION + "\"," +
-                    "\"provider\":\"" + permissionPlugin + "\"" +
-                    "}" +
+                    "\"provider\":\"" + jsonEscape(permissionPlugin) + "\"," +
+                    "\"list\":[" + staffListJson + "]" +
+                    "}," +
+                    "\"worlds\":[" + worldsJson + "]," +
+                    "\"performance\":{" +
+                    "\"tps\":" + formatTwoDecimals(tps) + "," +
+                    "\"mspt\":" + formatTwoDecimals(mspt) +
+                    "}," +
+                    "\"events\":[" + eventsJson + "]" +
                     "}";
 
             final byte[] payload = json.getBytes(StandardCharsets.UTF_8);
@@ -101,17 +211,37 @@ public final class DucksApiPlugin extends JavaPlugin {
             return registration == null ? null : registration.getProvider();
         }
 
-        private int countStaffOnline(Permission permissionService) {
-            int count = 0;
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                final boolean hasPermission = permissionService == null
-                        ? player.hasPermission(STAFF_PERMISSION)
-                        : permissionService.playerHas(player, STAFF_PERMISSION);
-                if (hasPermission) {
-                    count++;
-                }
+        private String resolveStaffRank(Permission permissionService, Player player) {
+            if (permissionService == null) {
+                return "staff";
             }
-            return count;
+
+            String rank = permissionService.getPrimaryGroup(player);
+            if (rank == null || rank.isBlank()) {
+                rank = permissionService.getPlayerPrefix(player);
+            }
+            if (rank == null || rank.isBlank()) {
+                return "staff";
+            }
+            return rank;
         }
+
+        private double roundToTwoDecimals(double value) {
+            return Math.round(value * 100.0d) / 100.0d;
+        }
+
+        private String formatTwoDecimals(double value) {
+            return String.format(Locale.US, "%.2f", value);
+        }
+
+        private String jsonEscape(String input) {
+            if (input == null) {
+                return "";
+            }
+            return input.replace("\\", "\\\\").replace("\"", "\\\"");
+        }
+    }
+
+    private record StatusEvent(String type, String player, long timestamp) {
     }
 }

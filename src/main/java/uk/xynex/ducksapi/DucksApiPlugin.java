@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Locale;
@@ -167,16 +168,32 @@ public final class DucksApiPlugin extends JavaPlugin implements Listener {
 
             final int maxPlayers = Bukkit.getMaxPlayers();
             final long uptimeSeconds = Math.max(0L, (System.currentTimeMillis() - startTimeMillis) / 1000L);
+            final long uptimeHours = uptimeSeconds / 3600L;
+            final long uptimeMinutes = (uptimeSeconds % 3600L) / 60L;
+            final long uptimeRemainingSeconds = uptimeSeconds % 60L;
             final double tps = roundToTwoDecimals(Bukkit.getServer().getTPS()[0]);
             final double mspt = roundToTwoDecimals(Bukkit.getServer().getAverageTickTime());
+            final Instant timestamp = Instant.now();
 
             final String json = "{" +
                     "\"status\":\"" + serverStatus.get() + "\"," +
+                    "\"timestamp\":{\"unix\":" + timestamp.getEpochSecond() + "," +
+                    "\"iso8601\":\"" + timestamp + "\"}," +
                     "\"server\":{" +
                     "\"name\":\"Xynex\"," +
-                    "\"version\":\"" + jsonEscape(Bukkit.getVersion()) + "\"," +
                     "\"motd\":\"" + jsonEscape(Bukkit.getMotd()) + "\"," +
-                    "\"uptime\":" + uptimeSeconds +
+                    "\"loader\":{" +
+                    "\"name\":\"" + jsonEscape(Bukkit.getName()) + "\"," +
+                    "\"version\":\"" + jsonEscape(Bukkit.getVersion()) + "\"}," +
+                    "\"minecraft\":{" +
+                    "\"version\":\"" + jsonEscape(Bukkit.getMinecraftVersion()) + "\"," +
+                    "\"bukkitVersion\":\"" + jsonEscape(Bukkit.getBukkitVersion()) + "\"}," +
+                    "\"uptime\":{" +
+                    "\"seconds\":" + uptimeSeconds + "," +
+                    "\"hours\":" + uptimeHours + "," +
+                    "\"minutes\":" + uptimeMinutes + "," +
+                    "\"remainingSeconds\":" + uptimeRemainingSeconds + "," +
+                    "\"formatted\":\"" + formatUptime(uptimeHours, uptimeMinutes, uptimeRemainingSeconds) + "\"}" +
                     "}," +
                     "\"players\":{" +
                     "\"online\":" + onlinePlayers + "," +
@@ -234,11 +251,36 @@ public final class DucksApiPlugin extends JavaPlugin implements Listener {
             return String.format(Locale.US, "%.2f", value);
         }
 
+        private String formatUptime(long hours, long minutes, long seconds) {
+            return String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds);
+        }
+
         private String jsonEscape(String input) {
             if (input == null) {
                 return "";
             }
-            return input.replace("\\", "\\\\").replace("\"", "\\\"");
+
+            final StringBuilder escaped = new StringBuilder(input.length());
+            for (int index = 0; index < input.length(); index++) {
+                final char character = input.charAt(index);
+                switch (character) {
+                    case '\\' -> escaped.append("\\\\");
+                    case '"' -> escaped.append("\\\"");
+                    case '\b' -> escaped.append("\\b");
+                    case '\f' -> escaped.append("\\f");
+                    case '\n' -> escaped.append("\\n");
+                    case '\r' -> escaped.append("\\r");
+                    case '\t' -> escaped.append("\\t");
+                    default -> {
+                        if (character < 0x20) {
+                            escaped.append(String.format(Locale.US, "\\u%04x", (int) character));
+                        } else {
+                            escaped.append(character);
+                        }
+                    }
+                }
+            }
+            return escaped.toString();
         }
     }
 

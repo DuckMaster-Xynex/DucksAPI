@@ -1,6 +1,5 @@
 plugins {
     java
-    id("io.papermc.paperweight.userdev") version "2.0.0-beta.19"
 }
 
 group = "uk.xynex"
@@ -13,7 +12,7 @@ repositories {
 }
 
 dependencies {
-    paperweight.paperDevBundle("1.21.5-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.5-R0.1-SNAPSHOT")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7") {
         exclude(group = "org.bukkit", module = "bukkit")
     }
@@ -21,13 +20,14 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 
 tasks {
-    assemble {
-        dependsOn(reobfJar)
+    register("paperweightUserdevSetup") {
+        group = "paperweight"
+        description = "Compatibility task: paperweight is not used because this plugin only depends on the public Paper API."
     }
 
     compileJava {

@@ -1,6 +1,5 @@
 plugins {
     java
-    id("io.papermc.paperweight.userdev") version "2.0.0-beta.21"
 }
 
 group = "uk.xynex"
@@ -25,12 +24,11 @@ java {
     }
 }
 
-paperweight {
-    javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    })
-    reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.MOJANG_PRODUCTION
-}
+tasks {
+    register("paperweightUserdevSetup") {
+        group = "paperweight"
+        description = "Compatibility task: paperweight is not used because this plugin only depends on the public Paper API."
+    }
 
 tasks {
     compileJava {

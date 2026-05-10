@@ -78,7 +78,7 @@ You need:
 
 ### Build tooling note
 
-This plugin uses the public Paper API only. It does not use Paper internals/NMS, so the build intentionally avoids `paperweight-userdev`; that removes the real `setupMacheSources` setup step that can fail when the configured paperweight, Gradle, Java, and dev-bundle versions do not match. A compatibility no-op `paperweightUserdevSetup` task is kept so old scripts that call that task continue to complete.
+The build uses Paper's supported `paperweight-userdev` setup with Gradle 9, Java 21, and an explicit Java 21 launcher for paperweight setup work. Pinning the paperweight setup launcher prevents `paperweightUserdevSetup` / `setupMacheSources` from accidentally running under a newer JVM than the Minecraft 1.21.5 dev bundle expects.
 
 ## 3) Install on your Minecraft Paper server
 

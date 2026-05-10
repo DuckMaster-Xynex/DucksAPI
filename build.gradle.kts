@@ -1,5 +1,6 @@
 plugins {
     java
+    id("io.papermc.paperweight.userdev") version "2.0.0-beta.21"
 }
 
 group = "uk.xynex"
@@ -24,12 +25,14 @@ java {
     }
 }
 
-tasks {
-    register("paperweightUserdevSetup") {
-        group = "paperweight"
-        description = "Compatibility no-op: this plugin uses the Paper API only and does not need paperweight userdev setup."
-    }
+paperweight {
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    })
+    reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.MOJANG_PRODUCTION
+}
 
+tasks {
     compileJava {
         options.encoding = "UTF-8"
     }

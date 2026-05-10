@@ -30,6 +30,7 @@ tasks {
         description = "Compatibility task: paperweight is not used because this plugin only depends on the public Paper API."
     }
 
+tasks {
     compileJava {
         options.encoding = "UTF-8"
     }

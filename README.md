@@ -5,9 +5,14 @@ A beginner-friendly Minecraft **Paper** plugin that opens a tiny HTTP API endpoi
 - `GET /status`
 - Returns JSON with:
   - server status (`online`, `offline`, `restarting`)
+  - timestamp (`unix` and `iso8601`)
+  - server MOTD
+  - server loader and Minecraft version details
+  - uptime in hours, minutes, and seconds
+  - TPS and MSPT performance data
   - online player count
   - max player count
-  - staff count using permsssion
+  - staff count using permission
 
 ---
 
@@ -22,6 +27,33 @@ And return data like:
 ```json
 {
   "status": "online",
+  "timestamp": {
+    "unix": 1778421600,
+    "iso8601": "2026-05-10T14:00:00Z"
+  },
+  "server": {
+    "name": "Xynex",
+    "motd": "A Minecraft Server",
+    "loader": {
+      "name": "Paper",
+      "version": "git-Paper-123 (MC: 1.21.5)"
+    },
+    "minecraft": {
+      "version": "1.21.5",
+      "bukkitVersion": "1.21.5-R0.1-SNAPSHOT"
+    },
+    "uptime": {
+      "seconds": 3723,
+      "hours": 1,
+      "minutes": 2,
+      "remainingSeconds": 3,
+      "formatted": "01:02:03"
+    }
+  },
+  "performance": {
+    "tps": 20.00,
+    "mspt": 12.34
+  },
   "players": {
     "online": 5,
     "max": 100
@@ -42,6 +74,11 @@ You need:
 3. Access to your server files (`plugins` folder)
 
 ---
+
+
+### Build tooling note
+
+This plugin uses the public Paper API only. It does not use Paper internals/NMS, so the build intentionally avoids `paperweight-userdev`; that removes the real `setupMacheSources` setup step that can fail when the configured paperweight, Gradle, Java, and dev-bundle versions do not match. A compatibility no-op `paperweightUserdevSetup` task is kept so old scripts that call that task continue to complete.
 
 ## 3) Install on your Minecraft Paper server
 

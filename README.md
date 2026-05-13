@@ -2,6 +2,10 @@
 
 A beginner-friendly Minecraft **Paper** plugin that opens a tiny HTTP API endpoint:
 
+#### Current development status:
+`Developing v1.2.0, v1.1.0 released`
+
+
 - `GET /status`
 - Returns JSON with:
   - server status (`online`, `offline`, `restarting`)

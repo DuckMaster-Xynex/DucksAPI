@@ -1,10 +1,9 @@
 # Duck's API (Paper Plugin)
 
-A beginner-friendly Minecraft **Paper** plugin that opens a tiny HTTP API endpoint:
-
 #### Current development status:
 `Developing v1.2.0, v1.1.0 released`
 
+A beginner-friendly Minecraft **Paper** plugin that opens a tiny HTTP API endpoint:
 
 - `GET /status`
 - Returns JSON with:
@@ -265,3 +264,9 @@ Check server console for plugin startup errors and verify plugin loaded.
 4. Start server
 
 Done.
+
+#### Disclaimer:
+Whule this code is written by codex(AI), I review it, test it, build the releases and write the prompts.
+
+#### Feedback:
+If you have any feedback feel free to email support@xynex.uk as this plugin is made for/by Xynex.

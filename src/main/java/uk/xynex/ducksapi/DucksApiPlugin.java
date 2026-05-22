@@ -235,9 +235,6 @@ public final class DucksApiPlugin extends JavaPlugin implements Listener {
 
             String rank = permissionService.getPrimaryGroup(player);
             if (rank == null || rank.isBlank()) {
-                rank = permissionService.getPlayerPrefix(player);
-            }
-            if (rank == null || rank.isBlank()) {
                 return "staff";
             }
             return rank;

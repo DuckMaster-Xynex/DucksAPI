@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "uk.xynex"
-version = "1.3.0"
+version = "2.1.0"
 
 repositories {
     mavenCentral()

@@ -1,2 +1,6 @@
 api:
   port: 8080
+
+webhooks:
+  enabled: true
+  url: ""

@@ -17,6 +17,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import com.sun.management.OperatingSystemMXBean;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +35,8 @@ public final class DucksApiPlugin extends JavaPlugin implements Listener {
     private static final String CONFIG_API_PORT_PATH = "api.port";
     private static final String STAFF_PERMISSION = "ducksapi.staff";
     private static final int MAX_EVENTS = 10;
+    private static final String WEBHOOK_ENABLED_PATH = "webhooks.enabled";
+    private static final String WEBHOOK_URL_PATH = "webhooks.url";
 
     private static final double BYTES_PER_MEGABYTE = 1024.0d * 1024.0d;
     private static final double BYTES_PER_GIGABYTE = 1024.0d * 1024.0d * 1024.0d;
@@ -50,6 +54,7 @@ public final class DucksApiPlugin extends JavaPlugin implements Listener {
         serverStatus.set("online");
         startTimeMillis = System.currentTimeMillis();
         getServer().getPluginManager().registerEvents(this, this);
+        sendWebhook("ONLINE", null);
 
         try {
             httpServer = HttpServer.create(new InetSocketAddress(port), 0);
@@ -77,16 +82,21 @@ public final class DucksApiPlugin extends JavaPlugin implements Listener {
         }
 
         serverStatus.set("offline");
+        sendWebhook("OFFLINE", null);
     }
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        addEvent("join", event.getPlayer().getName());
+        final String playerName = event.getPlayer().getName();
+        addEvent("join", playerName);
+        sendWebhook("JOIN", playerName);
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        addEvent("leave", event.getPlayer().getName());
+        final String playerName = event.getPlayer().getName();
+        addEvent("leave", playerName);
+        sendWebhook("LEAVE", playerName);
     }
 
     private void addEvent(String type, String player) {
@@ -96,6 +106,43 @@ public final class DucksApiPlugin extends JavaPlugin implements Listener {
                 recentEvents.removeFirst();
             }
         }
+    }
+
+    private void sendWebhook(String event, String player) {
+        if (!getConfig().getBoolean(WEBHOOK_ENABLED_PATH, false)) {
+            return;
+        }
+
+        final String webhookUrl = getConfig().getString(WEBHOOK_URL_PATH, "");
+        if (webhookUrl == null || webhookUrl.isBlank()) {
+            return;
+        }
+
+        final String payload = "{" +
+                "\"event\":\"" + jsonEscape(event) + "\"," +
+                "\"timestamp\":\"" + System.currentTimeMillis() + "\"," +
+                "\"player\":" + (player == null ? "null" : "\"" + jsonEscape(player) + "\"") +
+                "}";
+
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            try {
+                final HttpURLConnection connection = (HttpURLConnection) new URL(webhookUrl).openConnection();
+                connection.setRequestMethod("POST");
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setDoOutput(true);
+                connection.setConnectTimeout(3000);
+                connection.setReadTimeout(3000);
+
+                try (OutputStream outputStream = connection.getOutputStream()) {
+                    outputStream.write(payload.getBytes(StandardCharsets.UTF_8));
+                }
+
+                connection.getResponseCode();
+                connection.disconnect();
+            } catch (IOException ignored) {
+                // Fail silently by design.
+            }
+        });
     }
 
     private final class StatusHandler implements HttpHandler {

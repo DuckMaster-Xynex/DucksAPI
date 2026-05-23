@@ -1,7 +1,7 @@
 # Duck's API (Paper Plugin)
 
 #### Current development status:
-`Developing v2.1.0, Released v1.3.0`
+`Developing v2.1.0, Released v2.1.0`
 
 A beginner-friendly Minecraft **Paper** plugin that opens a tiny HTTP API endpoint:
 
@@ -111,6 +111,16 @@ api:
 3. Change `8080` if needed (for example `8090`).
 5. Save the file.
 6. Start or restart your server.
+
+4. Webhook settings:
+
+```yml
+webhooks:
+  enabled: true
+  url: ""
+```
+
+Set `webhooks.url` to your endpoint to receive `JOIN`, `LEAVE`, `ONLINE`, and `OFFLINE` webhook events.
 
 (You may need to expose the port via your server host(if not local) for this to work.
 

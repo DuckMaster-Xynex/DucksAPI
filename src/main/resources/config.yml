@@ -1,6 +1,7 @@
+# Change the port below to the port you want to use for requests.
 api:
   port: 8080
-
+# If you want to use the webhook system enter your URL below and ensure that enabled is set to true
 webhooks:
-  enabled: true
+  enabled: false
   url: ""

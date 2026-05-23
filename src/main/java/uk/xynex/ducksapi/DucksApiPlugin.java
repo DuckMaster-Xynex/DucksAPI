@@ -238,11 +238,20 @@ public final class DucksApiPlugin extends JavaPlugin implements Listener {
             return;
         }
 
+        final String webhookPlayer = ("JOIN".equals(event) || "LEAVE".equals(event))
+                ? (player == null || player.isBlank() ? "UNKNOWN" : player)
+                : "SERVER";
         final String payload = "{" +
-                "\"event\":\"" + jsonEscape(event) + "\"," +
-                "\"timestamp\":" + System.currentTimeMillis() + "," +
-                "\"player\":" + (player == null ? "null" : "\"" + jsonEscape(player) + "\"") +
-                "}";
+                "\"content\":\"\"," +
+                "\"embeds\":[{" +
+                "\"title\":\"DucksAPI Event\"," +
+                "\"color\":5763719," +
+                "\"fields\":[" +
+                "{\"name\":\"Event\",\"value\":\"" + jsonEscape(event) + "\",\"inline\":true}," +
+                "{\"name\":\"Player\",\"value\":\"" + jsonEscape(webhookPlayer) + "\",\"inline\":true}," +
+                "{\"name\":\"Timestamp\",\"value\":\"" + System.currentTimeMillis() + "\",\"inline\":false}" +
+                "]}" +
+                "]}";
 
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
             HttpURLConnection connection = null;
@@ -250,7 +259,7 @@ public final class DucksApiPlugin extends JavaPlugin implements Listener {
                 connection = (HttpURLConnection) endpoint.openConnection();
                 connection.setInstanceFollowRedirects(true);
                 connection.setRequestMethod("POST");
-                connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                connection.setRequestProperty("Content-Type", "application/json");
                 connection.setRequestProperty("Accept", "application/json");
                 connection.setDoOutput(true);
                 connection.setConnectTimeout(5000);

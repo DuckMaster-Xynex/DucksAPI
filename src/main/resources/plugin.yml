@@ -1,5 +1,5 @@
 name: DucksAPI
-version: '2.1.0'
+version: '2.1.1'
 main: uk.xynex.ducksapi.DucksApiPlugin
 api-version: '1.21'
 author: xynex
@@ -7,3 +7,15 @@ description: Exposes HTTP telemetry endpoint for Paper servers.
 
 softdepend:
   - Vault
+
+commands:
+  ducksapi:
+    description: DucksAPI administration command.
+    usage: /ducksapi reload
+    permission: ducksapi.admin
+    aliases: [dapi]
+
+permissions:
+  ducksapi.admin:
+    description: Allows reloading DucksAPI runtime configuration.
+    default: op

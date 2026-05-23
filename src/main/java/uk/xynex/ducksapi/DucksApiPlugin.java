@@ -145,6 +145,46 @@ public final class DucksApiPlugin extends JavaPlugin implements Listener {
         });
     }
 
+    private double roundToTwoDecimals(double value) {
+        return Math.round(value * 100.0d) / 100.0d;
+    }
+
+    private String formatTwoDecimals(double value) {
+        return String.format(Locale.US, "%.2f", value);
+    }
+
+    private String formatUptime(long hours, long minutes, long seconds) {
+        return String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds);
+    }
+
+    private String jsonEscape(String input) {
+        if (input == null) {
+            return "";
+        }
+
+        final StringBuilder escaped = new StringBuilder(input.length());
+        for (int index = 0; index < input.length(); index++) {
+            final char character = input.charAt(index);
+            switch (character) {
+                case '\\' -> escaped.append("\\\\");
+                case '"' -> escaped.append("\\\"");
+                case '\b' -> escaped.append("\\b");
+                case '\f' -> escaped.append("\\f");
+                case '\n' -> escaped.append("\\n");
+                case '\r' -> escaped.append("\\r");
+                case '\t' -> escaped.append("\\t");
+                default -> {
+                    if (character < 0x20) {
+                        escaped.append(String.format(Locale.US, "\\u%04x", (int) character));
+                    } else {
+                        escaped.append(character);
+                    }
+                }
+            }
+        }
+        return escaped.toString();
+    }
+
     private final class StatusHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
@@ -351,45 +391,6 @@ public final class DucksApiPlugin extends JavaPlugin implements Listener {
             return rank;
         }
 
-        private double roundToTwoDecimals(double value) {
-            return Math.round(value * 100.0d) / 100.0d;
-        }
-
-        private String formatTwoDecimals(double value) {
-            return String.format(Locale.US, "%.2f", value);
-        }
-
-        private String formatUptime(long hours, long minutes, long seconds) {
-            return String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds);
-        }
-
-        private String jsonEscape(String input) {
-            if (input == null) {
-                return "";
-            }
-
-            final StringBuilder escaped = new StringBuilder(input.length());
-            for (int index = 0; index < input.length(); index++) {
-                final char character = input.charAt(index);
-                switch (character) {
-                    case '\\' -> escaped.append("\\\\");
-                    case '"' -> escaped.append("\\\"");
-                    case '\b' -> escaped.append("\\b");
-                    case '\f' -> escaped.append("\\f");
-                    case '\n' -> escaped.append("\\n");
-                    case '\r' -> escaped.append("\\r");
-                    case '\t' -> escaped.append("\\t");
-                    default -> {
-                        if (character < 0x20) {
-                            escaped.append(String.format(Locale.US, "\\u%04x", (int) character));
-                        } else {
-                            escaped.append(character);
-                        }
-                    }
-                }
-            }
-            return escaped.toString();
-        }
     }
 
     private record StatusEvent(String type, String player, long timestamp) {

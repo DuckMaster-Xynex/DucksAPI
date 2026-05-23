@@ -1,7 +1,7 @@
 # Duck's API (Paper Plugin)
 
 #### Current development status:
-`Released v1.3.0`
+`Developing v2.1.0, Released v1.3.0`
 
 A beginner-friendly Minecraft **Paper** plugin that opens a tiny HTTP API endpoint:
 

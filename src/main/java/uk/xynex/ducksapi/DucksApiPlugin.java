@@ -17,7 +17,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import com.sun.management.OperatingSystemMXBean;
+import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileStore;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -29,6 +33,9 @@ public final class DucksApiPlugin extends JavaPlugin implements Listener {
     private static final String CONFIG_API_PORT_PATH = "api.port";
     private static final String STAFF_PERMISSION = "ducksapi.staff";
     private static final int MAX_EVENTS = 10;
+
+    private static final double BYTES_PER_MEGABYTE = 1024.0d * 1024.0d;
+    private static final double BYTES_PER_GIGABYTE = 1024.0d * 1024.0d * 1024.0d;
 
     private HttpServer httpServer;
     private final AtomicReference<String> serverStatus = new AtomicReference<>("offline");
@@ -174,6 +181,46 @@ public final class DucksApiPlugin extends JavaPlugin implements Listener {
             final double tps = roundToTwoDecimals(Bukkit.getServer().getTPS()[0]);
             final double mspt = roundToTwoDecimals(Bukkit.getServer().getAverageTickTime());
             final Instant timestamp = Instant.now();
+            final Runtime runtime = Runtime.getRuntime();
+            final long usedMemoryBytes = runtime.totalMemory() - runtime.freeMemory();
+            final long maxMemoryBytes = runtime.maxMemory();
+            final long freeMemoryBytes = Math.max(0L, maxMemoryBytes - usedMemoryBytes);
+            final long ramUsedMb = Math.round(usedMemoryBytes / BYTES_PER_MEGABYTE);
+            final long ramMaxMb = Math.round(maxMemoryBytes / BYTES_PER_MEGABYTE);
+            final long ramFreeMb = Math.round(freeMemoryBytes / BYTES_PER_MEGABYTE);
+            final double ramUsagePercent = maxMemoryBytes > 0L
+                    ? roundToTwoDecimals((usedMemoryBytes * 100.0d) / maxMemoryBytes)
+                    : 0.0d;
+
+            double processCpuUsagePercent = 0.0d;
+            final java.lang.management.OperatingSystemMXBean operatingSystemBean =
+                    ManagementFactory.getOperatingSystemMXBean();
+            if (operatingSystemBean instanceof OperatingSystemMXBean osBean) {
+                final double processCpuLoad = osBean.getProcessCpuLoad();
+                if (processCpuLoad >= 0.0d) {
+                    processCpuUsagePercent = roundToTwoDecimals(processCpuLoad * 100.0d);
+                }
+            }
+
+            long diskTotalBytes = 0L;
+            long diskUsableBytes = 0L;
+            long diskUsedBytes = 0L;
+            try {
+                final Path storagePath = getDataFolder().toPath();
+                final FileStore fileStore = java.nio.file.Files.getFileStore(storagePath);
+                diskTotalBytes = fileStore.getTotalSpace();
+                diskUsableBytes = fileStore.getUsableSpace();
+                diskUsedBytes = Math.max(0L, diskTotalBytes - diskUsableBytes);
+            } catch (IOException ignored) {
+                // Keep disk metrics at zero if filesystem stats are unavailable.
+            }
+
+            final double diskTotalGb = roundToTwoDecimals(diskTotalBytes / BYTES_PER_GIGABYTE);
+            final double diskFreeGb = roundToTwoDecimals(diskUsableBytes / BYTES_PER_GIGABYTE);
+            final double diskUsedGb = roundToTwoDecimals(diskUsedBytes / BYTES_PER_GIGABYTE);
+            final double diskUsagePercent = diskTotalBytes > 0L
+                    ? roundToTwoDecimals((diskUsedBytes * 100.0d) / diskTotalBytes)
+                    : 0.0d;
 
             final String json = "{" +
                     "\"status\":\"" + serverStatus.get() + "\"," +
@@ -210,6 +257,23 @@ public final class DucksApiPlugin extends JavaPlugin implements Listener {
                     "\"performance\":{" +
                     "\"tps\":" + formatTwoDecimals(tps) + "," +
                     "\"mspt\":" + formatTwoDecimals(mspt) +
+                    "}," +
+                    "\"system\":{" +
+                    "\"ram\":{" +
+                    "\"used_mb\":" + ramUsedMb + "," +
+                    "\"max_mb\":" + ramMaxMb + "," +
+                    "\"free_mb\":" + ramFreeMb + "," +
+                    "\"usage_percent\":" + formatTwoDecimals(ramUsagePercent) +
+                    "}," +
+                    "\"cpu\":{" +
+                    "\"process_usage_percent\":" + formatTwoDecimals(processCpuUsagePercent) +
+                    "}," +
+                    "\"disk\":{" +
+                    "\"used_gb\":" + formatTwoDecimals(diskUsedGb) + "," +
+                    "\"free_gb\":" + formatTwoDecimals(diskFreeGb) + "," +
+                    "\"total_gb\":" + formatTwoDecimals(diskTotalGb) + "," +
+                    "\"usage_percent\":" + formatTwoDecimals(diskUsagePercent) +
+                    "}" +
                     "}," +
                     "\"events\":[" + eventsJson + "]" +
                     "}";
